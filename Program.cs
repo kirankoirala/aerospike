@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Aerospike.Client;
 using Newtonsoft.Json;
-using System.IO;
-using ProtoBuf;
 
 namespace Aerospike
 {
@@ -35,29 +33,7 @@ namespace Aerospike
                 Console.WriteLine(ex.Message);
                 client.Close();
             }
-        }
 
-        private static void RunQuery()
-        {
-            var binName = "SubAccountBlob";
-
-            Console.WriteLine("Query");
-
-
-            Key key = new Key("test", "SubAcctPos", 49813975);
-
-            var record = client.Get(null, key);
-            byte[] buffer = null;
-            if (record != null && record.bins.TryGetValue(binName, out object obj))
-            {
-                buffer = (byte[])obj;
-            }
-
-            Console.WriteLine("Record found: ns=" + key.ns +
-                          " set=" + key.setName +
-                          " bin=" + binName +
-                          " digest=" + ByteUtil.BytesToHexString(key.digest) +
-                          " value=" + ProtoDeserialize(buffer));
         }
 
         private static void CreateIndex()
@@ -67,26 +43,26 @@ namespace Aerospike
             Console.WriteLine("Namsespace: test, Set: SubAcctPos, index_name: idx_acct_pos_id, bin: MasterAcctId");
         }
 
-        // private static void InsertRows()
-        // {
-        //     Random rnd = new Random();
-        //     for (var i = 0; i < 100; i++)
-        //     {
-        //         Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
+        private static void InsertRows()
+        {
+            Random rnd = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
 
 
-        //         var subDetail = JsonConvert.SerializeObject("{'SubAcctId':" + rnd.NextInt32().ToString() + ", 'Symbol':'" + rnd.NextString(4) + "', 'cash':" + rnd.NextDecimal() + ", 'margin':" + rnd.NextDecimal() + "}");
+                var subDetail = JsonConvert.SerializeObject("{'SubAcctId':" + rnd.NextInt32().ToString() + ", 'Symbol':'" + rnd.NextString(4) + "', 'cash':" + rnd.NextDecimal() + ", 'margin':" + rnd.NextDecimal() + "}");
 
-        //         // Create Bins
-        //         Bin bin1 = new Bin("MasterAcctId", 1234001);
-        //         Bin bin2 = new Bin("SubAccountBlob", subDetail);
+                // Create Bins
+                Bin bin1 = new Bin("MasterAcctId", 1234001);
+                Bin bin2 = new Bin("SubAccountBlob", subDetail);
 
-        //         // Write record
-        //         client.Put(null, key, bin1, bin2);
-        //     }
+                // Write record
+                client.Put(null, key, bin1, bin2);
+            }
 
-        //     Console.WriteLine("hundred rows successfully inserted");
-        // }
+            Console.WriteLine("hundred rows successfully inserted");
+        }
 
         private static void InsertOneMasterRow()
         {
@@ -115,10 +91,8 @@ namespace Aerospike
                 }
             }
 
+            var subDetail = JsonConvert.SerializeObject(subAccounts);
             var masterKey = getNextUniqueInt();
-
-            var subDetail = ProtoSerialize(subAccounts);
-
             // Create Bins
             Bin bin1 = new Bin("MasterAcctId", masterKey);
             Bin bin2 = new Bin("SubAccountBlob", subDetail);
@@ -137,47 +111,23 @@ namespace Aerospike
             var zeroDate = DateTime.MinValue.AddHours(now.Hour).AddMinutes(now.Minute).AddSeconds(now.Second).AddMilliseconds(now.Millisecond);
             return (int)(zeroDate.Ticks / 10000);
         }
-
-
-        private static List<SubAcctDetail> ProtoDeserialize(byte[] data)
+        private static void RunQuery()
         {
-            if (data == null)
-            {
-                return new List<SubAcctDetail>();
-            }
+            var binName = "SubAccountBlob";
 
-            try
-            {
-                using (MemoryStream ms = new MemoryStream(data))
-                {
-                    return Serializer.Deserialize<List<SubAcctDetail>>(ms);
-                }
-            }
-            catch
-            {
-                throw;
-            }
-        }
+            Console.WriteLine("Query");
 
-        private static byte[] ProtoSerialize(List<SubAcctDetail> record)
-        {
-            if ((object)record == null)
-            {
-                return (byte[])null;
-            }
 
-            try
-            {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    Serializer.Serialize<List<SubAcctDetail>>((Stream)ms, record);
-                    return ms.ToArray();
-                }
-            }
-            catch
-            {
-                throw;
-            }
+            Key key = new Key("test", "SubAcctPos", 49813975);
+
+            var rs = client.Get(null, key);
+            
+
+            Console.WriteLine("Record found: ns=" + key.ns +
+                          " set=" + key.setName +
+                          " bin=" + binName +
+                          " digest=" + ByteUtil.BytesToHexString(key.digest) +
+                          " value=" + rs);
         }
     }
     public static class DecExtension
@@ -189,7 +139,7 @@ namespace Aerospike
             return firstBits; //| lastBits;
         }
 
-        public static int NextInt32WithRange(this Random rng, Int32 min, Int32 max)
+         public static int NextInt32WithRange(this Random rng, Int32 min, Int32 max)
         {
             int firstBits = rng.Next(min, max);
             int lastBits = rng.Next(0, 1 << 28);
@@ -199,9 +149,9 @@ namespace Aerospike
         {
             //byte scale = (byte)rng.Next(29);
             //bool sign = rng.Next(2) == 1;
-            return new decimal(rng.NextInt32WithRange(1, 100),
-                               rng.NextInt32WithRange(100, 200),
-                               rng.NextInt32WithRange(200, 500),
+            return new decimal(rng.NextInt32WithRange(1,100),
+                               rng.NextInt32WithRange(100,200),
+                               rng.NextInt32WithRange(200,500),
                                false,
                                0);
         }
@@ -212,9 +162,7 @@ namespace Aerospike
             return new string(Enumerable.Repeat(chars, length)
               .Select(s => s[rng.Next(s.Length)]).ToArray());
         }
-
     }
-
 
     public class SubAcctDetail
     {
