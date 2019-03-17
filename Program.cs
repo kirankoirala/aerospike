@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Aerospike.Client;
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace Aerospike
 {
@@ -13,6 +14,9 @@ namespace Aerospike
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
+
+            Stopwatch counter = new Stopwatch();
+
 
             string asServerIP = "localhost";
             int asServerPort = 3000;
@@ -25,7 +29,13 @@ namespace Aerospike
                 //Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
 
                 //InsertOneMasterRow();
+
+                counter.Start();
                 RunQuery();
+                counter.Start();
+                Console.WriteLine("Total time taken: " + counter.ElapsedMilliseconds.ToString());
+
+
                 client.Close();
             }
             catch (Exception ex)
@@ -34,34 +44,6 @@ namespace Aerospike
                 client.Close();
             }
 
-        }
-
-        private static void CreateIndex()
-        {
-            IndexTask task = client.CreateIndex(null, "test", "SubAcctPos", "idx_acct_pos_id", "MasterAcctId", IndexType.NUMERIC);
-            Console.WriteLine("The following index is created:");
-            Console.WriteLine("Namsespace: test, Set: SubAcctPos, index_name: idx_acct_pos_id, bin: MasterAcctId");
-        }
-
-        private static void InsertRows()
-        {
-            Random rnd = new Random();
-            for (var i = 0; i < 100; i++)
-            {
-                Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
-
-
-                var subDetail = JsonConvert.SerializeObject("{'SubAcctId':" + rnd.NextInt32().ToString() + ", 'Symbol':'" + rnd.NextString(4) + "', 'cash':" + rnd.NextDecimal() + ", 'margin':" + rnd.NextDecimal() + "}");
-
-                // Create Bins
-                Bin bin1 = new Bin("MasterAcctId", 1234001);
-                Bin bin2 = new Bin("SubAccountBlob", subDetail);
-
-                // Write record
-                client.Put(null, key, bin1, bin2);
-            }
-
-            Console.WriteLine("hundred rows successfully inserted");
         }
 
         private static void InsertOneMasterRow()
@@ -105,6 +87,38 @@ namespace Aerospike
             Console.WriteLine("hundred rows successfully inserted");
         }
 
+        private static void CreateIndex()
+        {
+            IndexTask task = client.CreateIndex(null, "test", "SubAcctPos", "idx_acct_pos_id", "MasterAcctId", IndexType.NUMERIC);
+            Console.WriteLine("The following index is created:");
+            Console.WriteLine("Namsespace: test, Set: SubAcctPos, index_name: idx_acct_pos_id, bin: MasterAcctId");
+        }
+
+       
+       //Inserts multiple master/sub and symbols
+       private static void InsertRows()
+        {
+            Random rnd = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
+
+
+                var subDetail = JsonConvert.SerializeObject("{'SubAcctId':" + rnd.NextInt32().ToString() + ", 'Symbol':'" + rnd.NextString(4) + "', 'cash':" + rnd.NextDecimal() + ", 'margin':" + rnd.NextDecimal() + "}");
+
+                // Create Bins
+                Bin bin1 = new Bin("MasterAcctId", 1234001);
+                Bin bin2 = new Bin("SubAccountBlob", subDetail);
+
+                // Write record
+                client.Put(null, key, bin1, bin2);
+            }
+
+            Console.WriteLine("hundred rows successfully inserted");
+        }
+
+        
+
         private static int getNextUniqueInt()
         {
             var now = DateTime.Now;
@@ -115,19 +129,26 @@ namespace Aerospike
         {
             var binName = "SubAccountBlob";
 
-            Console.WriteLine("Query");
+            Console.WriteLine("Query Started...");
 
 
-            Key key = new Key("test", "SubAcctPos", 49813975);
-
-            var rs = client.Get(null, key);
-            
+            Key key = new Key("test", "SubAcctPos", 50243432);
+            var subAccounts = new List<SubAcctDetail>();
+            var record = client.Get(null, key);
+            if (record != null && record.bins.TryGetValue(binName, out Object obj))
+            {
+                subAccounts = JsonConvert.DeserializeObject<List<SubAcctDetail>>(obj.ToString());
+            }
 
             Console.WriteLine("Record found: ns=" + key.ns +
                           " set=" + key.setName +
                           " bin=" + binName +
                           " digest=" + ByteUtil.BytesToHexString(key.digest) +
-                          " value=" + rs);
+                          " counts=" + subAccounts.Count());
+
+
+            Console.WriteLine("Query Ended...");
+
         }
     }
     public static class DecExtension
@@ -139,7 +160,7 @@ namespace Aerospike
             return firstBits; //| lastBits;
         }
 
-         public static int NextInt32WithRange(this Random rng, Int32 min, Int32 max)
+        public static int NextInt32WithRange(this Random rng, Int32 min, Int32 max)
         {
             int firstBits = rng.Next(min, max);
             int lastBits = rng.Next(0, 1 << 28);
@@ -149,9 +170,9 @@ namespace Aerospike
         {
             //byte scale = (byte)rng.Next(29);
             //bool sign = rng.Next(2) == 1;
-            return new decimal(rng.NextInt32WithRange(1,100),
-                               rng.NextInt32WithRange(100,200),
-                               rng.NextInt32WithRange(200,500),
+            return new decimal(rng.NextInt32WithRange(1, 100),
+                               rng.NextInt32WithRange(100, 200),
+                               rng.NextInt32WithRange(200, 500),
                                false,
                                0);
         }
