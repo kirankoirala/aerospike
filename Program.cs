@@ -36,8 +36,19 @@ namespace Aerospike
                 ////registerUdfFilterBySymbol();
 
                 //getFromUdf();
+                counter.Start();
+                var filteredPositions = getFilteredPositions("amzn");
+                var result = JsonConvert.DeserializeObject<List<SubAcctDetail>>(filteredPositions);
+                Console.WriteLine($"Total count: {result.Count()}");
+                //Console.WriteLine(filteredPositions);
+                counter.Stop();
+                Console.WriteLine($"Total time taken using udf is: {counter.ElapsedMilliseconds}");
 
-                getFilteredPositions("amzn");
+                counter.Restart();
+                RunQuery("amzn");
+                counter.Stop();
+                Console.WriteLine($"Total time taken without using udf is: {counter.ElapsedMilliseconds}");
+
 
                 //getAll();
                 //CreateIndex();
@@ -60,18 +71,24 @@ namespace Aerospike
 
         }
 
+        private static void registerUdfFilterBySymbol()
+        {
+            RegisterTask task = client.Register(null, "./filterpositions.lua", "filterpositions.lua", Language.LUA);
+            task.Wait();
+            Console.WriteLine("UDF is registered...");
+        }
+
         private static void getAll()
         {
             Key key = new Key("test", "SubAcctPos", 50243432);
             var record = client.Get(null, key);
             Console.WriteLine(record);
         }
-        private static void getFilteredPositions(string symbol)
+        private static string getFilteredPositions(string symbol)
         {
             Key key = new Key("test", "SubAcctPos", 50243432);
             var result = client.Execute(null, key, "filterpositions", "filter", Value.Get(symbol));
-            Console.WriteLine("result is below:.....");
-            Console.WriteLine(result);
+            return result.ToString();
         }
 
         private static void getFromUdf()
@@ -81,12 +98,7 @@ namespace Aerospike
 
             Console.WriteLine(result.ToString());
         }
-        private static void registerUdfFilterBySymbol()
-        {
-            RegisterTask task = client.Register(null, "./filterpositions.lua", "filterpositions.lua", Language.LUA);
-            task.Wait();
-            Console.WriteLine("UDF is registered...");
-        }
+      
 
         private static void CreateIndex()
         {
@@ -201,7 +213,7 @@ namespace Aerospike
             var zeroDate = DateTime.MinValue.AddHours(now.Hour).AddMinutes(now.Minute).AddSeconds(now.Second).AddMilliseconds(now.Millisecond);
             return (int)(zeroDate.Ticks / 10000);
         }
-        private static void RunQuery()
+        private static void RunQuery(string symbol)
         {
             var binName = "SubAccountBlob";
 
@@ -215,12 +227,12 @@ namespace Aerospike
             {
                 subAccounts = JsonConvert.DeserializeObject<List<SubAcctDetail>>(obj.ToString());
             }
-
+            var result = subAccounts.Where(s => s.Symbol == symbol.ToUpper());
             Console.WriteLine("Record found: ns=" + key.ns +
                           " set=" + key.setName +
                           " bin=" + binName +
                           " digest=" + ByteUtil.BytesToHexString(key.digest) +
-                          " counts=" + subAccounts.Count());
+                          " counts=" + result.Count());
 
 
             Console.WriteLine("Query Ended...");

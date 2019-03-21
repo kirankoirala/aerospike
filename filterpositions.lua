@@ -22,18 +22,12 @@ temp = "";
     end
   end
 --return temp;
-finalresult={};
-  y=1;
+finalresult="[";
   for s = 1, #result do
     if(string.find(result[s], '"Symbol":"'..string.upper(symbol)..'"') ~= nil) then
-      finalresult[y]=result[s];
-      y = y+1  ;
+      finalresult = finalresult..result[s]..',';
     end
   end
-  return_result="[";
-  for s = 1, #finalresult do
-    return_result=return_result..finalresult[s]
-  end
-  return return_result.."]";
+  return finalresult:sub(1, -2).."]";
 end
 
