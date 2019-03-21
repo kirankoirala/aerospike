@@ -29,11 +29,26 @@ namespace Aerospike
                 //Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
 
                 //InsertOneMasterRow();
+                //InsertIntoFoo();
 
-                counter.Start();
-                RunQuery();
-                counter.Start();
-                Console.WriteLine("Total time taken: " + counter.ElapsedMilliseconds.ToString());
+                ////never register again
+                ////register_udf();
+                ////register_hello_udf();
+               //registerUdfFilterBySymbol();
+
+                //getFromUdf();
+
+                getFilteredPositions("appl");
+
+                //getAll();
+//CreateIndex();
+                //getFromHelloUdf();
+
+
+                //counter.Start();
+                 //RunQuery();
+                // counter.Start();
+                //Console.WriteLine("Total time taken: " + counter.ElapsedMilliseconds.ToString());
 
 
                 client.Close();
@@ -46,6 +61,73 @@ namespace Aerospike
 
         }
 
+        private static void getAll(){
+            Key key = new Key("test", "SubAcctPos", 50243432);
+            var record = client.Get(null, key);
+            Console.WriteLine(record);
+        }
+        private static void getFilteredPositions(string symbol)
+        {
+            Key key = new Key("test", "SubAcctPos", 50243432);
+            var result = client.Execute(null, key, "filterpositions", "filter", Value.Get(symbol));
+            Console.WriteLine("result is below:.....");
+            Console.WriteLine(result);
+        }
+
+         private static void getFromUdf()
+        {
+            Key key = new Key("test", "foo", "Kiran");
+            var result = client.Execute(null, key, "example", "readBin", Value.Get("name"));
+
+            Console.WriteLine(result.ToString());
+        }
+        private static void registerUdfFilterBySymbol()
+        {
+            RegisterTask task = client.Register(null, "./filterpositions.lua", "filterpositions.lua", Language.LUA);
+            task.Wait();
+            Console.WriteLine("UDF is registered...");
+        }
+
+private static void CreateIndex()
+        {
+            IndexTask task = client.CreateIndex(null, "test", "MastAcctPos", "idx_master_acct", "MasterAcctId", IndexType.NUMERIC);
+            Console.WriteLine("The following index is created:");
+            Console.WriteLine("Namsespace: test, Set: MastAcctPos, index_name: idx_mast_acct_pos, bin: MasterAcctId");
+        }
+
+       
+
+        private static void getFromHelloUdf()
+        {
+            Key key = new Key("test", "foo", "Kiran");
+            var result = client.Execute(null, key, "hello", "hello", Value.Get("name"));
+
+            Console.WriteLine(result);
+        }
+
+        private static void register_udf()
+        {
+            RegisterTask task = client.Register(null, "./example.lua", "example.lua", Language.LUA);
+            task.Wait();
+            Console.WriteLine("UDF is registered...");
+
+        }
+
+        private static void register_hello_udf()
+        {
+            RegisterTask task = client.Register(null, "./hello.lua", "hello.lua", Language.LUA);
+            task.Wait();
+            Console.WriteLine("hwllo UDF is registered...");
+
+        }
+        private static void InsertIntoFoo()
+        {
+            Key key = new Key("test", "foo", "Kiran");
+
+            client.Put(null, key, new Bin("name", "Kiran"), new Bin("age", 15));
+
+            Console.WriteLine("1 foo is inserted");
+        }
         private static void InsertOneMasterRow()
         {
             Random rnd = new Random();
@@ -87,16 +169,10 @@ namespace Aerospike
             Console.WriteLine("hundred rows successfully inserted");
         }
 
-        private static void CreateIndex()
-        {
-            IndexTask task = client.CreateIndex(null, "test", "SubAcctPos", "idx_acct_pos_id", "MasterAcctId", IndexType.NUMERIC);
-            Console.WriteLine("The following index is created:");
-            Console.WriteLine("Namsespace: test, Set: SubAcctPos, index_name: idx_acct_pos_id, bin: MasterAcctId");
-        }
+        
 
-       
-       //Inserts multiple master/sub and symbols
-       private static void InsertRows()
+        //Inserts multiple master/sub and symbols
+        private static void InsertRows()
         {
             Random rnd = new Random();
             for (var i = 0; i < 100; i++)
@@ -117,7 +193,7 @@ namespace Aerospike
             Console.WriteLine("hundred rows successfully inserted");
         }
 
-        
+
 
         private static int getNextUniqueInt()
         {
