@@ -26,7 +26,6 @@ namespace Aerospike
                 client = new AerospikeClient(asServerIP, asServerPort);
                 //InsertRows();
                 //CreateIndex();
-                //Key key = new Key("test", "MastAcctPos", Guid.NewGuid().ToString());
 
                 //InsertOneMasterRow();
                 //InsertIntoFoo();
@@ -34,19 +33,19 @@ namespace Aerospike
                 ////never register again
                 ////register_udf();
                 ////register_hello_udf();
-               //registerUdfFilterBySymbol();
+                ////registerUdfFilterBySymbol();
 
                 //getFromUdf();
 
-                getFilteredPositions("appl");
+                getFilteredPositions("amzn");
 
                 //getAll();
-//CreateIndex();
+                //CreateIndex();
                 //getFromHelloUdf();
 
 
                 //counter.Start();
-                 //RunQuery();
+                //RunQuery();
                 // counter.Start();
                 //Console.WriteLine("Total time taken: " + counter.ElapsedMilliseconds.ToString());
 
@@ -61,7 +60,8 @@ namespace Aerospike
 
         }
 
-        private static void getAll(){
+        private static void getAll()
+        {
             Key key = new Key("test", "SubAcctPos", 50243432);
             var record = client.Get(null, key);
             Console.WriteLine(record);
@@ -74,7 +74,7 @@ namespace Aerospike
             Console.WriteLine(result);
         }
 
-         private static void getFromUdf()
+        private static void getFromUdf()
         {
             Key key = new Key("test", "foo", "Kiran");
             var result = client.Execute(null, key, "example", "readBin", Value.Get("name"));
@@ -88,14 +88,14 @@ namespace Aerospike
             Console.WriteLine("UDF is registered...");
         }
 
-private static void CreateIndex()
+        private static void CreateIndex()
         {
             IndexTask task = client.CreateIndex(null, "test", "MastAcctPos", "idx_master_acct", "MasterAcctId", IndexType.NUMERIC);
             Console.WriteLine("The following index is created:");
             Console.WriteLine("Namsespace: test, Set: MastAcctPos, index_name: idx_mast_acct_pos, bin: MasterAcctId");
         }
 
-       
+
 
         private static void getFromHelloUdf()
         {
@@ -169,7 +169,7 @@ private static void CreateIndex()
             Console.WriteLine("hundred rows successfully inserted");
         }
 
-        
+
 
         //Inserts multiple master/sub and symbols
         private static void InsertRows()

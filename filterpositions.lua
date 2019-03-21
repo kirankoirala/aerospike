@@ -25,15 +25,15 @@ temp = "";
 finalresult={};
   y=1;
   for s = 1, #result do
-    if(string.find(result[s], '"APPL"') ~= nil) then
+    if(string.find(result[s], '"Symbol":"'..string.upper(symbol)..'"') ~= nil) then
       finalresult[y]=result[s];
       y = y+1  ;
     end
   end
-  return_result="";
+  return_result="[";
   for s = 1, #finalresult do
     return_result=return_result..finalresult[s]
   end
-  return return_result;
+  return return_result.."]";
 end
 
